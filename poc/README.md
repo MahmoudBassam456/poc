@@ -10,6 +10,12 @@ $ conda create -n mini_rag00  python=3.8
 ```
 3) Activate conda Enviroment with this command:
 ```bash
-$                                                                                                    
+$ conda activate mini_rag00  
+```
+4) Install Requirments with this command:
+```bash
+$  pip install -r requirments.txt
+```       
+                                                                               
 
 
