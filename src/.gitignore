@@ -201,3 +201,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local configuration files
+
+#   These files are often used to store local settings or environment variables.
+#   They are typically user-specific and should not be shared across environments.
+#   If you have a specific configuration file that you want to ignore, you can uncomment the
+/mnt/d/Threecuts/poc/src/assets/Files
