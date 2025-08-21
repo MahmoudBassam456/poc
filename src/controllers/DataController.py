@@ -9,7 +9,7 @@ class DataController(basecontroller):
         super().__init__()
     #validate configuration
     def validate_config(self,file :UploadFile):
-        if file.content_type not in self.conf.FILE_ALOWED_TYPES:
+        if file.content_type not in self.conf.FILE_ALLOWED_TYPES:
             return False,ResponseSignalsFile.Invalid_File_Type.value
         if file.size > self.conf.FILE_MAX_SIZE:
            return False,ResponseSignalsFile.File_Size_Exceeded.value
