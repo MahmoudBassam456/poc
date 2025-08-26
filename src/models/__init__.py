@@ -1,1 +1,3 @@
 from .ResponsesEnum.ResposeSiginalsFile import ResponseSignalsFile
+from .ResponsesEnum.ProcessEnum import ProcessEnum
+from .ResponsesEnum.NlpSelectEnum import NlpSelectEnum
