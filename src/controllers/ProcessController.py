@@ -6,9 +6,11 @@ from doctr.io import DocumentFile
 from doctr.models import ocr_predictor
 from langchain_community.document_loaders import (
     TextLoader,
-    Docx2txtLoader    # ← قارئ PDF من LangChain
+    Docx2txtLoader ,
+    PyPDFLoader 
+       
 )
-
+from langchain_community.document_loaders import PyMuPDFLoader
 from unstructured.partition.pdf import partition_pdf
 from unstructured.partition.docx import partition_docx
 from unstructured.partition.text import partition_text
@@ -62,9 +64,8 @@ class ProcessController(basecontroller):
         except LookupError:
             nltk.download("averaged_perceptron_tagger_eng")
 
-        return ProcessEnum.PDF.value, partition_pdf(file_path,
-                                                    strategy="hi_res",
-                                                    ocr_languages="eng+ara")
+        return ProcessEnum.PDF.value, PyMuPDFLoader(file_path)
+        
                                                   
       elif file_extension == ProcessEnum.DOCX.value:
         try:
@@ -81,7 +82,7 @@ class ProcessController(basecontroller):
        if loader and file_ext in [ProcessEnum.TXT.value, ProcessEnum.DOCX.value]:
         return loader
        elif loader and file_ext == ProcessEnum.PDF.value:
-        return loader
+        return loader.load()
        else:
         return ProcessEnum.NOTSUPPORTED.value
 
@@ -89,7 +90,7 @@ class ProcessController(basecontroller):
       """Splits the file content into chunks using langchain TextSplitter."""
 
     # تحويل كل عنصر إلى Document مؤقت
-      docs = [Document(page_content=el.text, metadata=el.metadata.to_dict() if hasattr(el.metadata, "to_dict") else {}) for el in file_content]
+      docs = [Document(page_content=el.page_content, metadata=el.metadata.to_dict() if hasattr(el.metadata, "to_dict") else {}) for el in file_content]
 
     # إعداد TextSplitter
       text_splitter = RecursiveCharacterTextSplitter(
