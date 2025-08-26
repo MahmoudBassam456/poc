@@ -63,7 +63,8 @@ class ProcessController(basecontroller):
             nltk.download("averaged_perceptron_tagger_eng")
 
         return ProcessEnum.PDF.value, partition_pdf(file_path,
-                                                    strategy="hi_res")
+                                                    strategy="hi_res",
+                                                    ocr_languages="eng+ara")
                                                   
       elif file_extension == ProcessEnum.DOCX.value:
         try:
@@ -84,7 +85,7 @@ class ProcessController(basecontroller):
        else:
         return ProcessEnum.NOTSUPPORTED.value
 
-    def get_chunked_content(self, file_content: list, chunk_size: int = 100, overlap_size: int = 20):
+    def get_chunked_content(self, file_content: list, chunk_size: int = 400, overlap_size: int = 150):
       """Splits the file content into chunks using langchain TextSplitter."""
 
     # تحويل كل عنصر إلى Document مؤقت
