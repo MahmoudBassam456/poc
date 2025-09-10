@@ -19,8 +19,10 @@ class FaissController:
     model_name=VectorDbType.HUGGINGFACE_EMBEDDING_ID.value,
     
 )
-        self.reranker =CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
-        self.dimension = 768  # لأن all-MiniLM-L6-v2 له 384 بُعدًا
+        self.full_project_base =None
+        self.files_path =None
+        self.reranker =CrossEncoder(VectorDbType.RERANKER_MODEL_ID2.value)
+        self.dimension = VectorDbType.RERANKER_MODEL_DIMENSION.value  # لأن all-MiniLM-L6-v2 له 384 بُعدًا
         self.db = None
         self.reteriver = None
         self._initialize_db()
@@ -78,10 +80,10 @@ class FaissController:
 
     def llms_answer(self, query: str):
       llm = ChatOpenAI(
-        openai_api_key="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",
+        openai_api_key="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",
         openai_api_base="https://openrouter.ai/api/v1",
-        model="qwen/qwen2.5-vl-72b-instruct:free",
-        temperature=0.2
+        model="openai/gpt-4-turbo",
+        temperature=0.7
     )
 
       retriever = self.db.as_retriever(
@@ -94,15 +96,46 @@ class FaissController:
         return "No documents found in the database to answer the query."
 
       ranked_docs = self.rerank(query, candidates)
-      context = " ".join([doc.page_content for doc in ranked_docs[:3]])
+      context = " ".join([doc.page_content for doc in ranked_docs[:5]])
       if not context.strip():
         return "No usable content found in the top documents."
-
-    # استخدام SystemMessage و HumanMessage
+    
       messages = [
-        SystemMessage(content="You are a smart maintenance assistant, expert in CNC and industrial machines answer in Egyptian Arabic with maintaining the terminology  ."),
-        HumanMessage(content=f"Context:\n{context}\n\nQuestion: {query}\nAnswer:")
-    ]
+    SystemMessage(
+        content=(
+            "You are an Expert, practical, and friendly maintenance assistant for industrial machines, "
+            "especially CNC systems and fiber laser cutting machines.\n\n"
+            "### Response Style:\n"
+            "- Always answer in **Egyptian Arabic (colloquial)**.\n"
+            "- Keep all technical terms in **English** (e.g., spindle, servo motor, PLC, G-code, parameters, focus, speed, power).\n"
+            "- Structure the answer **step by step** using numbered steps or bullet points.\n"
+            "- For each step, show the **English command/action first**, then explain in Arabic after the colon.\n"
+            "- Keep paragraphs short, concise, and easy to read — no walls of text.\n"
+            "- If context is missing, say clearly: 'ما عنديش كفاية دلوقتي، بس ممكن نبحث مع بعض.'\n"
+            "- Use a practical technician-to-technician tone, like giving clear instructions in a workshop.\n"
+            "- Include **Tips (نصائح)** and **Warnings (تحذيرات)** whenever relevant.\n"
+            "- Add small real-world **examples with numbers** where possible (e.g., speed = 1500 mm/min for 5mm sheet).\n"
+            "- Make sure instructions follow a **logical sequence**.\n"
+            "- At the end, include a short **summary/reminder in Arabic**.\n"
+            "- Example formatting:\n"
+            "  1. **Command / Action**: شرح بالعربي.\n"
+            "     - ⚡ Tip: نصيحة.\n"
+            "     - ⚠️ Warning: تحذير.\n\n"
+            "- Write English first, then Arabic , for clarity (like this: 'CNC machine موجودة في مصر which is used في مصر والعالم العربي').\n"
+            "### Always answer based on the provided context and write for a technician in a workshop."
+        )
+    ),
+    HumanMessage(
+        content=f"Context:\n{context}\n\nQuestion: {query}\nAnswer:"
+    )
+]
+
+
+
+
+
+
+
 
     # استدعاء LLM بالطريقة الصحيحة
       answer = llm(messages)
@@ -113,3 +146,9 @@ class FaissController:
        scores = self.reranker.predict(pairs)
        ranked = [doc for _, doc in sorted(zip(scores, candidates), key=lambda x: x[0], reverse=True)]
        return ranked
+    def create_data_db_path(self, project_id: str) -> str:
+        self.full_project_base = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        self.files_path =os.path.join(self.full_project_base, "assets/Files")
+        project_path = os.path.join(base_path, project_id)
+        os.makedirs(project_path, exist_ok=True)
+        return os.path.join(project_path, "faiss_index")

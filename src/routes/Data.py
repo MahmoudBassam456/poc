@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, status, Body
+from fastapi import APIRouter, Depends, UploadFile, File, status, Body ,BackgroundTasks,Request
 from fastapi.responses import JSONResponse
 import os
 import aiofiles
@@ -9,11 +9,20 @@ from models import ResponseSignalsFile
 from .schemes.data import ProcessRequest
 from assets.services.Vector_db.Faiss_controller import FaissController
 
+from models.db_model.db_project import ProjectDB 
+from motor.motor_asyncio import AsyncIOMotorClient
+from bson.objectid import ObjectId 
+from models.db_schames.project import project
+ # to help with mongodb object id in pydantic model python
+
+
+
 logger = logging.getLogger("uvicorn.error")
 data_router = APIRouter(prefix="/api/v1/upload", tags=["upload"])
 
 @data_router.post("/data/{file_id}")
 async def upload_file(
+   request: Request,
     file_id: str,
     file: UploadFile ,
     config: Config = Depends(get_config)
@@ -47,6 +56,10 @@ async def upload_file(
         async with aiofiles.open(file_target_fullpath, "wb") as f:
             while chunk := await file.read(config.FILE_SIZE_CHUNK):
                 await f.write(chunk)
+    # Save file record to DB
+        data_base_rec=ProjectDB(db_client=request.app.mogo_client)
+    
+        file_id_db=await data_base_rec.create_project(project_id=file_id,file_name=file.filename,file_path=file_target_fullpath,file_extension=ProcessController(file_path=file_target_fullpath).get_file_extension())
            
     except Exception as e:
         logger.error(f"Failed to save file {file.filename}: {str(e)}")
@@ -63,23 +76,28 @@ async def upload_file(
         "state": state,
         "filename": file.filename,
         "saved_to": file_target_fullpath,
-        "file_id": file_id,
+        "file_id in db": str(file_id_db._id),
         "file_extension": exten_sion
     }
-@data_router.post("/process/{file_id}")
+
+@data_router.post("/process/{project_id}")
 async def process_endpoint(
-    file_id: str,
+    project_id: str,
+    request: Request,
     file_path: ProcessRequest = Body(...)
 ):
-    file_query = file_path.file_path
-
+    asa =await ProjectDB(request.app.mogo_client).get_project_or_create_newone(project_id=project_id)
+    file_query = asa.file_path
+    test=request.app.mogo_client
     # التحقق من وجود الملف
     if not os.path.exists(file_query):
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"message": "File not found"}
         )
-
+    ea= ProjectDB(db_client=test)
+   # q=await ea.create_project(project_data=project_id)
+   # test_id=await ea.get_project_or_create_newone(project_id=project_id)
     # جلب محتوى الملف
     content = ProcessController(file_path=file_query).get_file_content()
     chunked_content = ProcessController(file_path=file_query).get_chunked_content(file_content=content)
@@ -90,8 +108,13 @@ async def process_endpoint(
     # result.add_documents(chunked_content)
 
     # الحصول على الإجابة من LLM
-    res_text = result.llms_answer(" ايه هو cypcut")
+    #BackgroundTasks(result.llms_answer(" ايه هو cypcut"))
+ 
 
+    # الحصول على الإجابة من LLM
+    #BackgroundTasks(result.llms_answer(" ايه هو cypcut"))
+    res_text = result.llms_answer("ازاينظبط pramaters في fiber leaser machine?")
+    
     # تحويل النص العربي الطويل إلى قائمة فقرات
     res_paragraphs = res_text.split("\n")  # كل سطر عنصر في القائمة
     if isinstance(res_text, list):
@@ -103,7 +126,9 @@ async def process_endpoint(
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
-            "Result": res_paragraphs
+            "Result": res_paragraphs,
+            "path": file_query
+          #  "test_id":str(test_id.project_id)
         },
         media_type="application/json; charset=utf-8"
     )

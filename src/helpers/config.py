@@ -9,6 +9,8 @@ class Config(BaseSettings):
     FILE_SIZE_CHUNK: int = 1024
     DEEPSEEK_API_KEY: str
     QWEN_API_KEY: str
+    MONGODB_URI: str
+    MONGODB_NAME: str
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8"

@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  
+  mongodb:
+    image: mongo:7-jammy
+    container_name: mongodb
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27007:27017"   # Host:Container (ده علشان توصله من بره Docker)
+    networks:
+      - backend
+    restart: always
+
+networks:
+  backend:
+
+volumes:
+  mongo_data:
