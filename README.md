@@ -1,4 +1,6 @@
 # POC_MINIRAG
+video from experience of application 
+https://drive.google.com/file/d/1xXSD1sZYEyaz_tDUclYaLZyNWoYtWrTO/view?usp=sharing
 
 # requriments
 -python 3.8 or later
