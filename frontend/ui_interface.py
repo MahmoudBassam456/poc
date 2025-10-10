@@ -54,7 +54,7 @@ if user_input := st.chat_input("اكتب سؤالك هنا..."):
 
         # Poll for answer
         final_answer = ""
-        dots = ["", ".", "..", "..."]
+        dots = ["",  "..", "..."]
         dot_index = 0
 
         for attempt in range(30):  # ~30 seconds timeout
@@ -64,7 +64,7 @@ if user_input := st.chat_input("اكتب سؤالك هنا..."):
                     data = session_resp.json()
                     raw_text = "\n".join(data.get("session", []))
                     # تنسيق النص: RTL وإضافة سطر بعد كل نقطة أو :
-                    formatted_text = raw_text.replace(".", ".  \n").replace(":", ":  \n")
+                    formatted_text = raw_text
                     final_answer = f"<div style='direction: rtl; text-align: right;'>{formatted_text}</div>"
                     break
                 elif session_resp.status_code == 404:

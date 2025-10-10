@@ -1,20 +1,16 @@
-from fastapi import APIRouter, Depends, UploadFile, File, status, Body ,BackgroundTasks,Request
+from fastapi import APIRouter, Depends, UploadFile, File, status, Body, BackgroundTasks, Request
 from fastapi.responses import JSONResponse
-import os
+from typing import List
 import aiofiles
+import os
 import logging
+
 from helpers import get_config, Config
 from controllers import DataController, ProjectController, ProcessController
-from models import ResponseSignalsFile
+from models.db_model import ProjectDB
+from models.ResponsesEnum.ResposeSiginalsFile import ResponseSignalsFile
 from .schemes.data import ProcessRequest
 from assets.services.Vector_db.Faiss_controller import FaissController
-
-from models.db_model.db_project import ProjectDB 
-from motor.motor_asyncio import AsyncIOMotorClient
-from bson.objectid import ObjectId 
-from models.db_schames.project import project
- # to help with mongodb object id in pydantic model python
-
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -103,9 +99,9 @@ async def process_endpoint(
     chunked_content = ProcessController(file_path=file_query).get_chunked_content(file_content=content)
 
     # استدعاء Faiss
-    result = FaissController(db_path="/mnt/d/Threecuts/poc/src/routesindex/index")
+    result = FaissController(db_path=os.path.join(os.getcwd(), "routesindex", "index"))
     # يمكن إضافة محتوى مقسم إلى Faiss إذا أردت
-    # result.add_documents(chunked_content)
+    result.add_documents(chunked_content)
 
     # الحصول على الإجابة من LLM
     #BackgroundTasks(result.llms_answer(" ايه هو cypcut"))
@@ -113,22 +109,67 @@ async def process_endpoint(
 
     # الحصول على الإجابة من LLM
     #BackgroundTasks(result.llms_answer(" ايه هو cypcut"))
-    res_text = result.llms_answer("ازاينظبط pramaters في fiber leaser machine?")
+
     
     # تحويل النص العربي الطويل إلى قائمة فقرات
-    res_paragraphs = res_text.split("\n")  # كل سطر عنصر في القائمة
-    if isinstance(res_text, list):
-    # تحويل كل Document إلى نص
-     res_paragraphs = [doc.page_content for doc in res_text]
-    else:
+  
     # إذا نص عادي
-     res_paragraphs = str(res_text).split("\n")
+    
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
-            "Result": res_paragraphs,
+            
             "path": file_query
           #  "test_id":str(test_id.project_id)
         },
         media_type="application/json; charset=utf-8"
     )
+
+@data_router.post("/batch_upload/{project_id}", status_code=status.HTTP_202_ACCEPTED)
+async def upload_batch_files(
+    project_id: str,
+    files: List[UploadFile],
+    background_tasks: BackgroundTasks,
+    request: Request,
+    config: Config = Depends(get_config)
+):
+    """
+    Accepts multiple files, saves them, and queues them for background processing.
+    """
+    project_path = ProjectController().get_project_path(file_id=project_id)
+    os.makedirs(project_path, exist_ok=True)
+
+    saved_files_paths = []
+    results = {"saved": [], "failed": []}
+
+    for file in files:
+        is_valid, state = DataController().validate_config(file=file)
+        if not is_valid:
+            results["failed"].append({"filename": file.filename, "reason": state})
+            continue
+
+        file_target_fullpath = DataController().clean_filename_build(files_path=project_path, file=file)
+        
+        try:
+            async with aiofiles.open(file_target_fullpath, "wb") as f:
+                while chunk := await file.read(config.FILE_SIZE_CHUNK):
+                    await f.write(chunk)
+            
+            saved_files_paths.append(file_target_fullpath)
+            results["saved"].append({"filename": file.filename, "path": file_target_fullpath})
+        except Exception as e:
+            logging.error(f"Failed to save file {file.filename}: {e}")
+            results["failed"].append({"filename": file.filename, "reason": "Failed to save file."})
+
+    if saved_files_paths:
+        # Add the processing task to the background
+        background_tasks.add_task(
+            ProcessController.process_and_vectorize_files,
+            file_paths=saved_files_paths,
+            project_id=project_id
+        )
+        message = f"Accepted {len(saved_files_paths)} files for processing."
+    else:
+        message = "No valid files were accepted for processing."
+
+    return {"message": message, "details": results}

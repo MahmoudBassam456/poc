@@ -8,7 +8,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from models.db_model.db_session import SessionDB
 from models.ResponsesEnum.session_statusEnum import SessionStatusEnum
 import asyncio
-
+import os
 
 nlp_router=APIRouter(prefix="/api/v1/nlp",tags=["nlp"])
 
@@ -28,7 +28,7 @@ async def query_recieve(request: Request, background_tasks: BackgroundTasks, Que
 
 async def rag_respond(Query: str, session_id: str, db_client: AsyncIOMotorClient):
     try:
-        faiss_instance = FaissController(db_path="/mnt/d/Threecuts/poc/src/routesindex/index")
+        faiss_instance = FaissController(db_path = os.path.join(os.getcwd(), "routesindex", "index"))
         res_text = faiss_instance.llms_answer(Query)
         SessionDB_instance = SessionDB(db_client=db_client)
 
