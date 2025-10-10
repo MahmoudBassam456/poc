@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: poc_fastapi
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src/assets/Files:/app/src/assets/Files
+      - ./src/routesindex:/app/src/routesindex
+      - ./src/.env:/app/src/.env
+    depends_on:
+      - mongo
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017
+      - MONGODB_NAME=poc
+
+  mongo:
+    image: mongo:7.0
+    container_name: poc_mongo
+    restart: always
+    ports:
+      - "27007:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo_seed:/docker-entrypoint-initdb.d
+
+volumes:
+  mongo_data:
