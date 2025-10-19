@@ -67,7 +67,14 @@ docker run -d \
  ```bash
 fastapi dev main.py --host 0.0.0.0 --port 5000
 ```
-
+### 3.3 Run Streamlit -- go to frontend first from poc dir (
+```bash
+cd frontend 
+```
+)
+```bash
+ streamlit run ui_interface.py --server.address=0.0.0.0 --server.port=8501
+```
 ### 4. Configure environment variables
 - Copy `.env.example` to `.env` and update values as needed.
 - **Important:** Remove any invalid lines (like `/localhost`) from `.env`.
