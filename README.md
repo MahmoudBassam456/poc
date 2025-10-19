@@ -47,6 +47,22 @@ uv pip install -r requirements.txt
   ```bash
 docker compose up --build
 ```
+
+Notes : 
+1.before go to Running Step 
+please go to .env file and add your api from openrouter (recomended) or 
+from any provider like openai and after add api go to vectordbEnums at dir of vector db at assets/services 
+and edit url with provider like 
+```bash
+https://api.openai.com/v1
+```
+2.Run Mongodb container 
+```bash
+docker run -d \
+  --name mongodb \
+  -p 27007:27017 \
+  mongo
+```
 ### 3.2. Run Project from Miniconda 
  ```bash
 fastapi dev main.py --host 0.0.0.0 --port 5000
