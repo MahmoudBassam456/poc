@@ -29,7 +29,7 @@ It is structured for easy deployment and extension.
 
 ### 1. Clone the repository
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/MahmoudBassam456/poc.git
 cd poc/src
 ```
 
@@ -41,7 +41,15 @@ conda activate mini_rag00
 
 ### 3. Install dependencies
 ```bash
-pip install -r requirements.txt
+uv pip install -r requirements.txt
+```
+### 3.1 Install from docker (mongodb)-- after go to dir of docker compose 
+  ```bash
+docker compose up --build
+```
+### 3.2. Run Project from Miniconda 
+ ```bash
+fastapi dev main.py --host 0.0.0.0 --port 5000
 ```
 
 ### 4. Configure environment variables
